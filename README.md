@@ -39,24 +39,41 @@ secondary channel is then the primary one.
 You can instantiate the middleware like this:
 
 ~~~clojure
-(auth (atom #{"wss://trusted:80/some-app/ws"})
+(require '[kabel-auth.core :refer [auth inbox-auth register-external-token external-tokens]]
+         '[postal.core :refer [send-message]])
+
+(auth (atom #{"trusted-peer.com" "localhost" "127.0.0.1"})
       receiver-token-store ;; some (dedicated) konserve store
       sender-token-store ;; some (dedicated) konserve store
-      "wss://localhost:8080/some-app/ws" ;; remote of this connection (same as for kabel connection)
       ;; decide which messages need protection
       (fn [{:keys [type]}] (or ({:state-changing-msg-type :auth} type)
                                :unrelated))
       ;; notification when authentication is needed
       (fn [protocol user] (alert! "Check channel " protocol " for " user))
+      ;; provide an authentication notifier
+      (fn [{:keys [protocol token user]}] ;; only for :mail protocol here
+        (let [ext-tok (register-external-token token)]
+          (send-message {:host "smtp.your-host.com"}
+                        {:from "no-reply@your-host.com"
+                         :to user
+                         :subject "Please authenticate"
+                         :body (str "Visit http://your-end-point/auth/" ext-tok)})))
       [peer [in out]])
 ~~~
 
-Furthermore you have to provide a secondary channel for authentication:
+Furthermore you have to provide an end-point for authentication:
 
-TODO
+~~~clojure
+(routes ;; your compojure routes
+  (GET "/auth/:token" [token]
+    (put! inbox-auth {:token (@external-tokens (java.util.UUID/fromString token))})))
+~~~
+
+A full example can be found [here](https://github.com/whilo/topiq/src/topiq/core.cljs).
 
 
 ## Todo
+   - make timeouts configurable
    - add public/private key authentication of signed messages as a third level
 
 ## License

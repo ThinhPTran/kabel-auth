@@ -10,6 +10,4 @@
                  [io.replikativ/konserve "0.3.3"]
 
                  [es.topiq/full.async "0.2.8-beta1"]
-                 [kordano/full.cljs.async "0.1.3-alpha"]
-
-                 [com.draines/postal "1.11.3"]])
+                 [kordano/full.cljs.async "0.1.3-alpha"]])
