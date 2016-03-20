@@ -36,6 +36,9 @@ secondary channel is then the primary one.
 
 ## Usage
 
+Include in your dependencies:
+[![Clojars Project](http://clojars.org/io.replikativ/kabel-auth/latest-version.svg)](http://clojars.org/io.replikativ/kabel-auth)
+
 You can instantiate the middleware like this:
 
 ~~~clojure
