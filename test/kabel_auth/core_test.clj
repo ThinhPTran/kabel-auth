@@ -36,7 +36,7 @@
                :downstream {:foo :bar}
                :user "loop:eve@topiq.es"
                :crdt-id 1
-               :connection "http://localhost/"
+               :connection "localhost"
                :sender 4441})
       (is (= (<?? out)
              {:type :kabel-auth.core/auth-request,
@@ -49,18 +49,18 @@
               :downstream {:foo :bar},
               :user "loop:eve@topiq.es",
               :crdt-id 1,
-               :connection "http://localhost/"
+               :connection "localhost"
               :sender 4441}))
       (>!! in {:type :pub/downstream ;; will pass through with session
                :downstream {:foo :bars}
                :user "loop:eve@topiq.es"
                :crdt-id 1
-               :connection "http://localhost/"
+               :connection "localhost"
                :sender 4441})
       (is (= (<?? new-in)
              {:type :pub/downstream,
               :downstream {:foo :bars},
               :user "loop:eve@topiq.es",
               :crdt-id 1,
-               :connection "http://localhost/"
+              :connection "localhost"
               :sender 4441})))))

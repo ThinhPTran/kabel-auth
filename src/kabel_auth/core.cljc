@@ -3,7 +3,6 @@
   (:require [kabel.platform-log :refer [debug info warn error]]
             [konserve.core :as k]
             [hasch.core :refer [uuid]]
-            #?(:cljs [goog.Uri])
             #?(:clj [full.async :refer [<? <?? go-try go-loop-try alt?]])
             #?(:clj [clojure.core.async :as async
                      :refer [<! >! >!! <!! timeout chan alt! go put!
@@ -34,13 +33,13 @@
 ;; ===== receiver side =====
 
 (defn auth-request [receiver-token-store sender user session-id
-                    request-fn out new-in a-msg]
+                    request-fn out new-in a-msg request-timeout]
   (let [[[_ proto username]] (re-seq #"(.+):(.+)" user)
         token (uuid)
         a-ch (chan)]
     (sub p-in-auth token a-ch)
     (go-try
-     (debug "requesting auth" user)
+     (debug "requesting auth" user "with timeout" request-timeout)
      (>! out {:type ::auth-request :user username :protocol (keyword proto)})
      (request-fn {:token token :user username :protocol (keyword proto)})
      (alt? a-ch
@@ -50,28 +49,23 @@
              (<! (k/assoc-in receiver-token-store [sender user] tok))
              (>! new-in a-msg))
 
-           (timeout (* 5 60 1000))
+           (timeout request-timeout)
            (do
              (debug "timeout" user)
              (>! out {:type ::auth-timeout :msg a-msg}))))))
 
 
 
-(defn authenticate [trusted-hosts receiver-token-store request-fn auth-ch new-in out]
+(defn authenticate [trusted-hosts receiver-token-store
+                    request-fn auth-ch new-in out token-timeout request-timeout]
   (let [session-id (uuid)]
     (go-loop-try []
-                 (let [{:keys [sender connection downstream user] msg-token :token :as a-msg}
-                       (<? auth-ch)
-                       _ (debug "CONNECTION" connection)
-                       token-timeout (* 10 60 1000)
-                       host (if (keyword? connection) ;; for stage or special local connections
-                              connection
-                              #?(:clj (.getHost (java.net.URL. connection))
-                                 :cljs (.getDomain (goog.Uri. connection))))]
+                 (let [{:keys [sender host downstream user] msg-token :token :as a-msg}
+                       (<? auth-ch)]
                    (when a-msg
                      (debug "authenticating" user "for" host)
                      (cond  (@trusted-hosts host)
-                            (do (debug "trusted connection" host)
+                            (do (debug "trusted host" host)
                                 (>! new-in a-msg))
 
                             (let [{:keys [time token session]}
@@ -88,14 +82,14 @@
 
                             :default
                             (auth-request receiver-token-store sender user session-id
-                                          request-fn out new-in a-msg))
+                                          request-fn out new-in a-msg request-timeout))
                      (recur))))))
 
 ;; ===== sender side =====
 (defn store-token [token-store store-token-ch]
-  (go-loop-try [{:keys [user token connection]} (<? store-token-ch)]
+  (go-loop-try [{:keys [user token host]} (<? store-token-ch)]
                (when token
-                 (<? (k/assoc-in token-store [connection user] token))
+                 (<? (k/assoc-in token-store [host user] token))
                  (recur (<? store-token-ch)))))
 
 (defn add-tokens-to-out [remote sender-token-store out new-out]
@@ -114,7 +108,7 @@
                  (recur (<? auth-request-ch)))))
 
 
-;; one sender-store per connection
+;; one sender-store per host
 ;; m sender-stores with tokens map to receiver-store, mapped by peer-id (TODO can disturb auth?)
 (defn auth [trusted-hosts
             receiver-token-store
@@ -122,13 +116,16 @@
             dispatch-fn
             auth-fn
             request-fn
-            [peer [in out]]]
+            [peer [in out]]
+            & {:keys [token-timeout request-timeout msg->user]
+               :or {token-timeout (* 31 24 60 60 1000)
+                    request-timeout (* 5 60 1000)}}]
   (let [new-in (chan)
         new-out (chan)
         remote (atom nil)
-        p (pub in (fn [{:keys [type connection] :as m}]
+        p (pub in (fn [{:keys [type host] :as m}]
                     ;; TODO uglily taken from first message coming in
-                    (when-not @remote (reset! remote connection))
+                    (when-not @remote (reset! remote host))
                     (case type
                       ;; sender
                       ::auth-request ::auth-request
@@ -139,7 +136,7 @@
         store-token-ch (chan)]
     ;; receiver
     (sub p :auth auth-ch)
-    (authenticate trusted-hosts receiver-token-store request-fn auth-ch new-in out)
+    (authenticate trusted-hosts receiver-token-store request-fn auth-ch new-in out token-timeout request-timeout)
 
 
     ;; sender

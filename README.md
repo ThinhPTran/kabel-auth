@@ -74,9 +74,14 @@ Furthermore you have to provide an end-point for authentication:
 
 A full example can be found [here](https://github.com/whilo/topiq/blob/master/src/topiq/core.cljs).
 
+At the moment you need to provide the user to authenticate for under
+the key `:user` in each relevant message. This is sufficient for
+[replikativ](https://github.com/replikativ/replikativ), but might not
+fit your design. If you want to flexibly map user identities to
+messages, please open an issue.
 
-## Todo
-   - make timeouts configurable
+
+## Roadmap
    - add public/private key authentication of signed messages as a third level
 
 ## License
