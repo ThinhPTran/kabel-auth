@@ -72,7 +72,7 @@ Furthermore you have to provide an end-point for authentication:
     (put! inbox-auth {:token (@external-tokens (java.util.UUID/fromString token))})))
 ~~~
 
-A full example can be found [here](https://github.com/whilo/topiq/src/topiq/core.cljs).
+A full example can be found [here](https://github.com/whilo/topiq/blob/master/src/topiq/core.cljs).
 
 
 ## Todo

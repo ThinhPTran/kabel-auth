@@ -62,11 +62,14 @@
     (go-loop-try []
                  (let [{:keys [sender connection downstream user] msg-token :token :as a-msg}
                        (<? auth-ch)
+                       _ (debug "CONNECTION" connection)
                        token-timeout (* 10 60 1000)
-                       host #?(:clj (.getHost (java.net.URL. connection))
-                               :cljs (.getDomain (goog.Uri. connection)))]
+                       host (if (keyword? connection) ;; for stage or special local connections
+                              connection
+                              #?(:clj (.getHost (java.net.URL. connection))
+                                 :cljs (.getDomain (goog.Uri. connection))))]
                    (when a-msg
-                     (debug "authenticating" user)
+                     (debug "authenticating" user "for" host)
                      (cond  (@trusted-hosts host)
                             (do (debug "trusted connection" host)
                                 (>! new-in a-msg))
