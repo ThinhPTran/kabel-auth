@@ -45,7 +45,7 @@
      (alt? a-ch
            (let [tok {:token token :time (now) :session session-id}]
              (debug "authenticated" user token)
-             (>! out {:type ::auth-token :token token})
+             (>! out {:type ::auth-token :token token :user user})
              (<! (k/assoc-in receiver-token-store [sender user] tok))
              (>! new-in a-msg))
 
@@ -70,7 +70,7 @@
 
                             (let [{:keys [time token session]}
                                   (<? (k/get-in receiver-token-store [sender user]))]
-                              (debug "token exists?" sender user token)
+                              (debug "token exists?" sender user token " msg-token: " msg-token)
                               (or (= session-id session) ;; already authed this user in this session
                                   (and msg-token
                                        (= msg-token token)
