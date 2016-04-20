@@ -9,7 +9,7 @@
                              go-loop pub sub unsub close!]]
                :cljs [cljs.core.async :as async
                       :refer [<! >! timeout chan put! pub sub unsub close!]]))
-  #?(:cljs (:require-macros [full.cljs.async :refer [<<? <? go-for go-try go-try> go-loop-try go-loop-try> alt?]])))
+  #?(:cljs (:require-macros [full.async :refer [<<? <? go-try go-loop-try alt?]])))
 
 (defn now [] #?(:clj (java.util.Date.)
                 :cljs (js/Date.)))
@@ -119,7 +119,7 @@
             [peer [in out]]
             & {:keys [token-timeout request-timeout msg->user]
                :or {token-timeout (* 31 24 60 60 1000)
-                    request-timeout (* 5 60 1000)}}]
+                    request-timeout (* 60 60 1000)}}]
   (let [new-in (chan)
         new-out (chan)
         remote (atom nil)

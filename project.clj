@@ -6,8 +6,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
 
                  [io.replikativ/kabel "0.1.4"] ;; only needed for logging! TODO refactor
-                 [io.replikativ/hasch "0.3.0-beta6"]
-                 [io.replikativ/konserve "0.3.3"]
+                 [io.replikativ/hasch "0.3.0"]
+                 [io.replikativ/konserve "0.3.5"]
 
-                 [es.topiq/full.async "0.2.8-beta1"]
-                 [kordano/full.cljs.async "0.1.3-alpha"]])
+                 [io.replikativ/full.async "0.9.1-SNAPSHOT"]])
